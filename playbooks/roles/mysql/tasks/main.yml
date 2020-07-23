@@ -1,0 +1,36 @@
+---
+- name: 'Instalar pacotes MySQL'
+  apt:
+    name: "{{ item }}"
+    state: latest
+  become: yes
+  with_items:
+    - mysql-server-5.7
+    - python-mysqldb
+
+- name: 'Cria o banco do MySQL'
+  mysql_db:
+    name: "{{ wp_db_name }}"
+    state: present
+  become: yes
+
+- name: 'Cria o usuário do MySQL'
+  mysql_user:
+    name: "{{ wp_db_user }}"
+    password: "{{ wp_db_pass }}"
+    priv: "{{ wp_db_name }}.*:ALL"
+    state: present
+    host: "{{ item }}"
+  with_items:
+    - 'localhost'
+    - '127.0.0.1'
+    - "{{ wp_host }}"
+  become: yes
+
+- name: 'Configura MySQL para aceitar conexões remotas'
+  copy:
+    src: 'roles/files/mysqld.cnf'
+    dest: '/etc/mysql/mysql.conf.d'
+  become: yes
+  notify:
+    - restart mysql
